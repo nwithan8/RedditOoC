@@ -34,41 +34,32 @@ track = []
 
 def getsentences(sentences, limit):
     final = ""
-    #print("Get Sentences: " + str(sentences))
+    #If the first sentence is less than the remaining space available in a tweet, start adding each sentence one at a time until the limit is reached.
+    #If the first sentence is longer than the available space, start over with a different comment.
     if len(sentences[0]) < limit:
         final = final + str(sentences[0])
-        #print("Final 1: "+ str(final))
         for i in range(1,(len(sentences))):
             if len(''.join([final,sentences[i]])) < int(limit) - 1:
                 final = final + " " + str(sentences[i])
-                #print("New final: " + final)
             else:
                 break
-        #print("THE FINAL: " + final)
         return final
     else:
         return getrandom()
 
-def sentences(text, limit):
-#    try:
-#        unicode(text, "ascii")
-#    except UnicodeError:
-#        text = unicode(text, "utf-8")
-#    print("DECODED: " + str(text))
-    #print(limit)
+def sentences(text, limit): #Split the comment up into sentences
     sentences = []
     m = re.split(r'(?<=[^A-Z].[.?!]) +(?=[0-9a-zA-Z])', str(text.encode('utf-8')))
     for i in m:
         sentences.append(i)
-        #print(i)
     return getsentences(sentences, limit)
 
-def tweet(tweettext,subandlink):
+def tweet(tweettext,subandlink): #Send tweet with Subreddit and link to comment
     body = str(tweettext).strip() + "\n" + str(subandlink)
     print(body)
     twitter.update_status(body)
 
-def getrandom():
+def getrandom(): #Pull a random comment from the stored list of ids
     global track
     number = random.randint(1,len(track))
     print(number)
@@ -76,9 +67,6 @@ def getrandom():
     sub = "r/" + reddit.comment(id=track[number]).subreddit.display_name
     link = "https://www.reddit.com" + str(reddit.comment(id=track[number]).permalink)
     shortlink = b.shorten(uri=link)["url"]
-    print(pretext)
-    #print(sub)
-    #print(shortlink)
     subandlink = "(" + str(sub) + ": " + str(shortlink) + ")"
     tweettext = sentences(pretext, 280-len(subandlink))
     tweet(tweettext,subandlink)
@@ -88,9 +76,8 @@ def main():
     global track
     global LENGTH_OF_TIME
     t_end = time.time() + (int(LENGTH_OF_TIME)*60)
+    #For 1 minute, collect the ids of all new comments posted in r/All
     for comment in reddit.subreddit('all').stream.comments():
-        #print(reddit.comment(comment).body)
-        #print(comment)
         track.append(comment)
         if time.time() > t_end:
             break
@@ -98,4 +85,4 @@ def main():
 
 while True:
     main()
-    time.sleep(int(HOW_OFTEN)*60)
+    time.sleep(int(HOW_OFTEN)*60) #Run once every 15 minutes
